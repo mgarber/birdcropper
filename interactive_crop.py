@@ -14,6 +14,7 @@ from PIL import Image
 from birdcropper.crop import adjust_bbox_to_aspect
 from birdcropper.io import image_paths, input_dir_argument, output_dir_for, resolve_input_dir
 from birdcropper.photo import open_photo, output_path_for, save_photo, supported_extensions_text
+from birdcropper.suggest import suggest_subject_bbox
 
 # Disable Matplotlib's default keybindings that conflict with ours.
 mpl.rcParams["keymap.save"] = []
@@ -27,6 +28,7 @@ SUFFIX = "_cropped"
 class CropSettings:
     upscale_to_original: bool = True
     preview_max_side: int = 1800
+    auto_margin: float = 0.08
 
 
 @dataclass(frozen=True)
@@ -95,6 +97,33 @@ def draw_and_select_bbox(img_path: Path, settings: CropSettings):
     disp_w, disp_h = display.size
 
     selected = {"bbox": None, "action": None}
+    suggestion_rect = {"patch": None}
+
+    def set_selected_bbox(display_bbox, edgecolor: str):
+        selected["bbox"] = display_bbox_to_original(
+            display_bbox,
+            display,
+            (w, h),
+        )
+
+        left, top, right, bottom = display_bbox
+        if suggestion_rect["patch"] is None:
+            suggestion_rect["patch"] = Rectangle(
+                (left, top),
+                right - left,
+                bottom - top,
+                fill=False,
+                edgecolor=edgecolor,
+                linewidth=2,
+            )
+            ax.add_patch(suggestion_rect["patch"])
+        else:
+            patch = suggestion_rect["patch"]
+            patch.set_xy((left, top))
+            patch.set_width(right - left)
+            patch.set_height(bottom - top)
+            patch.set_edgecolor(edgecolor)
+        fig.canvas.draw_idle()
 
     def onselect(eclick, erelease):
         x1, y1 = eclick.xdata, eclick.ydata
@@ -111,11 +140,21 @@ def draw_and_select_bbox(img_path: Path, settings: CropSettings):
             selected["bbox"] = None
             return
 
-        selected["bbox"] = display_bbox_to_original(
-            (left, top, right, bottom),
-            display,
-            (w, h),
+        set_selected_bbox((left, top, right, bottom), "cyan")
+
+    def onclick(event):
+        if event.inaxes != ax or event.xdata is None or event.ydata is None:
+            return
+        toolbar = getattr(fig.canvas, "toolbar", None)
+        if toolbar is not None and getattr(toolbar, "mode", ""):
+            return
+
+        display_bbox = suggest_subject_bbox(
+            display.array,
+            (event.xdata, event.ydata),
+            margin_fraction=settings.auto_margin,
         )
+        set_selected_bbox(display_bbox, "yellow")
 
     def onkey(event):
         if event.key in ("c", "s", "q"):
@@ -126,7 +165,7 @@ def draw_and_select_bbox(img_path: Path, settings: CropSettings):
     ax.imshow(display.array)
     ax.set_title(
         f"{img_path.name}\n"
-        "Drag to select crop.\n"
+        "Click the bird to suggest a crop, or drag to draw one.\n"
         "Then press: 'c' = confirm selection, 's' = skip, 'q' = quit"
     )
 
@@ -141,6 +180,7 @@ def draw_and_select_bbox(img_path: Path, settings: CropSettings):
     )
     fig._birdcropper_selector = selector
 
+    fig.canvas.mpl_connect("button_press_event", onclick)
     fig.canvas.mpl_connect("key_press_event", onkey)
     plt.show()
     plt.close(fig)
@@ -270,6 +310,12 @@ def parse_args() -> argparse.Namespace:
         default=1800,
         help="Largest preview dimension shown while selecting crops.",
     )
+    parser.add_argument(
+        "--auto-margin",
+        type=float,
+        default=0.08,
+        help="Margin fraction to add around click-suggested subject boxes.",
+    )
     return parser.parse_args()
 
 
@@ -285,6 +331,7 @@ def main():
     settings = CropSettings(
         upscale_to_original=not args.no_upscale,
         preview_max_side=args.preview_max_side,
+        auto_margin=args.auto_margin,
     )
 
     if not images:
@@ -296,7 +343,8 @@ def main():
     print(f"Saving cropped photos to {output_dir}")
     print(
         "For each image:\n"
-        " 1) Drag a rectangle, press 'c' to propose crop, 's' to skip, 'q' to quit.\n"
+        " 1) Click the bird to suggest a crop, or drag a rectangle manually.\n"
+        "    Press 'c' to propose crop, 's' to skip, 'q' to quit.\n"
         " 2) Preview shows final aspect-locked crop.\n"
         "    Press 'y' = accept and save, 'r' = redraw, 's' = skip, 'q' = quit."
     )

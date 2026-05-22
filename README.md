@@ -26,10 +26,16 @@ saved as JPEG outputs.
 
 For each photo:
 
-1. Drag a rectangle around the bird.
-2. Press `c` to confirm the selection, `s` to skip, or `q` to quit.
-3. The preview shows the final aspect-matched crop.
-4. Press `y` to save, `r` to redraw, `s` to skip, or `q` to quit.
+1. Click on the bird to let the program suggest a crop.
+2. If the suggestion is wrong, drag a rectangle manually.
+3. Press `c` to confirm the shown selection, `s` to skip, or `q` to quit.
+4. The preview shows the final aspect-matched crop.
+5. Press `y` to save, `r` to redraw, `s` to skip, or `q` to quit.
+
+Suggested crops are drawn in yellow. Manual drag selections are drawn in cyan.
+
+The automatic suggestion is a lightweight estimate from the clicked point. It
+works best when the bird clearly differs from the background.
 
 ## Environment
 
