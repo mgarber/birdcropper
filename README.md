@@ -19,7 +19,8 @@ Supported input formats:
 - TIFF: `.tif`, `.tiff`
 - Canon RAW: `.cr2`, `.cr3`
 
-RAW files are decoded for cropping and saved as JPEG outputs.
+RAW files need the optional `rawpy` package. They are decoded for cropping and
+saved as JPEG outputs.
 
 ## Crop controls
 
@@ -37,3 +38,22 @@ conda env create -f bridcrop_env.yaml
 conda activate birdcrop
 ```
 
+If the environment already exists:
+
+```bash
+conda env update -f bridcrop_env.yaml --prune
+conda activate birdcrop
+```
+
+## Optional Canon RAW Support
+
+Start by testing the program on JPEG, PNG, or TIFF photos. After that works,
+try installing RAW support:
+
+```bash
+conda activate birdcrop
+python -m pip install rawpy
+```
+
+If `rawpy` does not install cleanly on your machine, the regular photo formats
+will still work.

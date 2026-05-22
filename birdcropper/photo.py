@@ -44,8 +44,8 @@ def open_raw_photo(path: Path) -> OpenedPhoto:
         import rawpy
     except ImportError as exc:
         raise RuntimeError(
-            "Canon RAW files need the rawpy package. Install/update the conda "
-            "environment from bridcrop_env.yaml, then try again."
+            "Canon RAW files need the optional rawpy package. For now, test "
+            "with JPEG, PNG, or TIFF files, or run: python -m pip install rawpy"
         ) from exc
 
     with rawpy.imread(str(path)) as raw:
