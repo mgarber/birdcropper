@@ -11,9 +11,13 @@ def choose_input_dir(title: str = "Choose the folder with bird photos") -> Path 
     """Open a native folder picker and return the selected directory."""
     root = Tk()
     root.withdraw()
-    root.update()
-    selected = filedialog.askdirectory(title=title, mustexist=True)
-    root.destroy()
+    root.update_idletasks()
+    try:
+        selected = filedialog.askdirectory(parent=root, title=title, mustexist=True)
+    finally:
+        root.withdraw()
+        root.update_idletasks()
+        root.destroy()
 
     if not selected:
         return None

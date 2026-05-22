@@ -130,7 +130,7 @@ def draw_and_select_bbox(img_path: Path, settings: CropSettings):
         "Then press: 'c' = confirm selection, 's' = skip, 'q' = quit"
     )
 
-    RectangleSelector(
+    selector = RectangleSelector(
         ax,
         onselect,
         interactive=True,
@@ -139,9 +139,11 @@ def draw_and_select_bbox(img_path: Path, settings: CropSettings):
         minspany=5,
         spancoords="pixels",
     )
+    fig._birdcropper_selector = selector
 
     fig.canvas.mpl_connect("key_press_event", onkey)
     plt.show()
+    plt.close(fig)
 
     return selected["action"], selected["bbox"], (w, h), img
 
@@ -188,6 +190,7 @@ def preview_adjusted_bbox(
 
     fig.canvas.mpl_connect("key_press_event", onkey)
     plt.show()
+    plt.close(fig)
 
     return result["key"]
 
